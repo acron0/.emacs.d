@@ -8,7 +8,8 @@
 (defun wh-start-executor-cmd ()
   (interactive)
   (with-current-buffer (cider-current-repl-buffer)
-    (insert "(do (require 'wh.executor.core) (wh.executor.core/start))")
+    (insert "
+(do (require 'wh.executor.service) (wh.executor.service/start))")
     (execute-kbd-macro (kbd "<return>"))))
 
 (defun wh-start-app-cmd ()

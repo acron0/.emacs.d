@@ -38,6 +38,9 @@
 (straight-use-package 'switch-window)
 (straight-use-package 'deadgrep)
 (straight-use-package 'super-save)
+(straight-use-package 'ob-mongo)
+(straight-use-package 'easy-kill)
+(straight-use-package 'helm)
 
 ;; - github
 (straight-use-package
@@ -75,6 +78,10 @@
 (load "~/.emacs.d/config-functions.el")
 (load "~/.emacs.d/config-clojure.el")
 (load "~/.emacs.d/config-workshub.el")
+;;
+(load "~/.emacs.d/lib/ob-mongo.el")
+(load "~/.emacs.d/lib/helm-swoop.el")
+(require 'helm-swoop)
 
 ;; theme config
 (load-theme 'doom-dracula +1)
@@ -125,20 +132,27 @@
 
 ;; keybindings
 ;; - global
-(global-set-key (kbd "C-x m") 'eshell)
-(global-set-key (kbd "C-c f") 'consult-recent-file)
-(global-set-key (kbd "C-c d") 'toggle-window-dedicated)
-(global-set-key (kbd "C-x p") 'window-swap-states)
-(global-set-key (kbd "C-x .") 'lsp-find-references)
-(global-set-key (kbd "C-x 2") 'split-window-below-and-switch)
-(global-set-key (kbd "C-x 3") 'split-window-right-and-switch)
-(global-set-key (kbd "C-x o") 'switch-window)
-(global-set-key (kbd "C-x f") 'consult-imenu)
+(global-set-key (kbd "C-x m")   'eshell)
+(global-set-key (kbd "C-c f")   'consult-recent-file)
+(global-set-key (kbd "C-c d")   'toggle-window-dedicated)
+(global-set-key (kbd "C-x p")   'window-swap-states)
+(global-set-key (kbd "C-x .")   'lsp-find-references)
+(global-set-key (kbd "C-x 2")   'split-window-below-and-switch)
+(global-set-key (kbd "C-x 3")   'split-window-right-and-switch)
+(global-set-key (kbd "C-x o")   'switch-window)
+(global-set-key (kbd "C-x f")   'consult-imenu)
+(global-set-key (kbd "C-M-SPC") 'easy-mark)
+(global-set-key (kbd "C-x /")   'helm-swoop)
+
 (define-key smartparens-mode-map (kbd "C-S-<right>") 'sp-forward-slurp-sexp)
-(define-key smartparens-mode-map (kbd "C-S-<left>") 'sp-backward-slurp-sexp)
-(define-key smartparens-mode-map (kbd "C-S-<up>") 'sp-raise-sexp)
-(define-key smartparens-mode-map (kbd "M-r") 'sp-raise-sexp)
-(define-key smartparens-mode-map (kbd "M-s") 'sp-unwrap-sexp)
+(define-key smartparens-mode-map (kbd "C-S-<left>")  'sp-backward-slurp-sexp)
+(define-key smartparens-mode-map (kbd "C-S-<up>")    'sp-raise-sexp)
+(define-key smartparens-mode-map (kbd "M-r")         'sp-raise-sexp)
+(define-key smartparens-mode-map (kbd "M-s")         'sp-unwrap-sexp)
+
+;; fix the risky variable eternal query
+;; https://emacs.stackexchange.com/questions/10983/remember-permission-to-execute-risky-local-variables
+(defun risky-local-variable-p (sym &optional _ignored) nil)
 
 ;; on startup
 (desktop-read)
@@ -146,3 +160,18 @@
 ;; (dir-treeview-open "~/projects")
 ;; (toggle-window-dedicated)
 ;; (split-window-right 30)o
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("eca44f32ae038d7a50ce9c00693b8986f4ab625d5f2b4485e20f22c47f2634ae" default))
+ '(safe-local-variable-values
+   '((cider-test-defining-forms "defspec" "deftest" "def-spec-test"))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
