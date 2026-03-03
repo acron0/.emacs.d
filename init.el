@@ -60,7 +60,8 @@
 (smartparens-global-strict-mode +1)
 (global-undo-tree-mode)
 (rainbow-mode +1)
-(global-idle-highlight-mode +1)
+(add-hook 'prog-mode-hook 'idle-highlight-mode)
+(setq org-return-follows-link t)
 (delete-selection-mode +1)
 (beacon-mode +1)
 (desktop-save-mode +1)
@@ -85,10 +86,12 @@
 
 ;; theme config
 (load-theme 'doom-dracula +1)
+(add-to-list 'custom-theme-load-path
+             (expand-file-name "straight/repos/emacs-dir-treeview" user-emacs-directory))
 (load-theme 'dir-treeview-pleasant +1)
 ;;
-(set-frame-parameter (selected-frame) 'alpha '(85 . 50))
-(add-to-list 'default-frame-alist '(alpha . (85 . 50)))
+(set-frame-parameter (selected-frame) 'alpha '(100 . 85))
+(add-to-list 'default-frame-alist '(alpha . (100 . 85)))
 
 ;; font config
 (cond 
@@ -100,12 +103,12 @@
  ((string-equal system-type "darwin")
   (progn
     (message "Mac OS X")
-    (set-frame-font "Inconsolata-13")))
+    (set-frame-font "Fira Code-13")))
  ;; Linux
  ((string-equal system-type "gnu/linux")
   (progn
     (message "Linux")
-    (set-frame-font "Inconsolata-11"))))
+    (set-frame-font "Fira Code-11"))))
 
 ;; late config / hooks
 (add-hook 'emacs-startup-hook
