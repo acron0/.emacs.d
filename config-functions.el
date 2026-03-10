@@ -61,6 +61,15 @@ buffer in current window."
               (when (re-search-forward "\\[ \\]" (line-end-position) t)
                 (replace-match "[X]")))))))))
 
+(defun todos--refresh ()
+  "Regenerate the *Todos* buffer contents, preserving cursor position."
+  (when (string= (buffer-name) "*Todos*")
+    (let ((inhibit-read-only t)
+          (pos (point)))
+      (erase-buffer)
+      (insert (shell-command-to-string "~/notes/Scripts/generate-todos.sh ~/notes --org"))
+      (goto-char (min pos (point-max))))))
+
 (defun show-todos ()
   "Display todos from notes in a dedicated org buffer."
   (interactive)
@@ -70,8 +79,35 @@ buffer in current window."
         (erase-buffer)
         (insert (shell-command-to-string "~/notes/Scripts/generate-todos.sh ~/notes --org")))
       (org-mode)
-      (local-set-key (kbd "C-c C-c") 'todos--toggle-in-source)
+      (let ((map (make-sparse-keymap)))
+        (set-keymap-parent map (current-local-map))
+        (define-key map (kbd "C-c C-c") 'todos--toggle-in-source)
+        (define-key map (kbd "g") 'todos--refresh)
+        (use-local-map map))
+      (add-hook 'window-buffer-change-functions
+                (lambda (_) (todos--refresh)) nil t)
       (goto-char (point-min)))
     (switch-to-buffer buf)))
+
+(defun open-meeting ()
+  "Create a new meeting note from the Meeting template."
+  (interactive)
+  (let* ((title (read-string "Meeting title: "))
+         (date (format-time-string "%Y-%m-%d"))
+         (time (format-time-string "%H:%M"))
+         (filename (concat date " - " title ".org"))
+         (filepath (expand-file-name filename "~/notes/Work/Meetings"))
+         (template (expand-file-name "Meeting.org" "~/notes/Templates")))
+    (unless (file-exists-p filepath)
+      (copy-file template filepath)
+      (with-current-buffer (find-file-noselect filepath)
+        (goto-char (point-min))
+        (while (search-forward "{{date}}" nil t)
+          (replace-match date t t))
+        (goto-char (point-min))
+        (while (search-forward "{{time}}" nil t)
+          (replace-match time t t))
+        (save-buffer)))
+    (find-file filepath)))
 
 (provide 'config-functions)

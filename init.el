@@ -71,6 +71,12 @@
 (scroll-bar-mode -1)
 (tool-bar-mode -1)
 
+;; keep backup/auto-save/lock files out of working directories
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups/")))
+(setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-saves/" t)))
+(setq create-lockfiles nil)
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree/")))
+
 (setq desktop-base-file-name ".desktop")
 (setq desktop-base-lock-name ".desktop.lock")
 (setq desktop-restore-eager 8)
