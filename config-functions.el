@@ -1,3 +1,6 @@
+(defvar notes-directory "~/notes"
+  "Root directory for notes. Used by `open-daily', `show-todos', `search-notes', etc.")
+
 ;; https://stackoverflow.com/a/25471300/254190
 (defun toggle-window-dedicated ()
   "Control whether or not Emacs is allowed to display another
@@ -26,10 +29,13 @@ buffer in current window."
   (other-window 1))
 
 (defun open-daily ()
-  "Open today's daily note in ~/notes/Dailies/<YYYY-MM-DD>.md."
+  "Open today's daily note in ~/notes/Dailies/<YYYY-MM-DD>.org."
   (interactive)
-  (find-file (expand-file-name (format-time-string "%Y-%m-%d.org")
-                               "~/notes/Dailies")))
+  (let ((filepath (expand-file-name (format-time-string "%Y-%m-%d.org")
+                                    (expand-file-name "Dailies" notes-directory))))
+    (find-file filepath)
+    (when (= (buffer-size) 0)
+      (insert (format-time-string "* %Y-%m-%d - Daily Notes\n")))))
 
 (defun todos--toggle-in-source ()
   "Toggle the checkbox in the source file for the current todo line."
@@ -67,7 +73,9 @@ buffer in current window."
     (let ((inhibit-read-only t)
           (pos (point)))
       (erase-buffer)
-      (insert (shell-command-to-string "~/notes/Scripts/generate-todos.sh ~/notes --org"))
+      (insert (shell-command-to-string (format "%s/Scripts/generate-todos.sh %s --org"
+                                          (expand-file-name notes-directory)
+                                          (shell-quote-argument (expand-file-name notes-directory)))))
       (goto-char (min pos (point-max))))))
 
 (defun show-todos ()
@@ -77,7 +85,9 @@ buffer in current window."
     (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer)
-        (insert (shell-command-to-string "~/notes/Scripts/generate-todos.sh ~/notes --org")))
+        (insert (shell-command-to-string (format "%s/Scripts/generate-todos.sh %s --org"
+                                          (expand-file-name notes-directory)
+                                          (shell-quote-argument (expand-file-name notes-directory))))))
       (org-mode)
       (let ((map (make-sparse-keymap)))
         (set-keymap-parent map (current-local-map))
@@ -96,8 +106,8 @@ buffer in current window."
          (date (format-time-string "%Y-%m-%d"))
          (time (format-time-string "%H:%M"))
          (filename (concat date " - " title ".org"))
-         (filepath (expand-file-name filename "~/notes/Work/Meetings"))
-         (template (expand-file-name "Meeting.org" "~/notes/Templates")))
+         (filepath (expand-file-name filename (expand-file-name "Work/Meetings" notes-directory)))
+         (template (expand-file-name "Meeting.org" (expand-file-name "Templates" notes-directory))))
     (unless (file-exists-p filepath)
       (copy-file template filepath)
       (with-current-buffer (find-file-noselect filepath)
@@ -109,5 +119,13 @@ buffer in current window."
           (replace-match time t t))
         (save-buffer)))
     (find-file filepath)))
+
+(defun search-notes (query)
+  "Search notes with rg, displaying results in a grep-mode buffer.
+Searches `notes-directory' by default."
+  (interactive "sSearch notes: ")
+  (grep (format "rg --no-heading --line-number --color=auto %s %s"
+                (shell-quote-argument query)
+                (shell-quote-argument (expand-file-name notes-directory)))))
 
 (provide 'config-functions)
