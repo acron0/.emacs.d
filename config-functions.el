@@ -50,13 +50,21 @@ buffer in current window."
 
 (defun todos--shell-cmd (script paths &optional flags)
   "Run SCRIPT with PATHS expanded and optional FLAGS passed as-is."
-  (shell-command-to-string
-   (concat
-    (shell-quote-argument (expand-file-name script))
-    " "
-    (mapconcat (lambda (p) (shell-quote-argument (expand-file-name p)))
-               paths " ")
-    (if flags (concat " " flags) ""))))
+  (let* ((expanded-paths (mapcar #'expand-file-name paths))
+         (output (shell-command-to-string
+                  (concat
+                   (shell-quote-argument (expand-file-name script))
+                   " "
+                   (mapconcat #'shell-quote-argument expanded-paths " ")
+                   (if flags (concat " " flags) "")))))
+    ;; Git bash strips drive letters from Windows paths (C:/Users/... -> /Users/...).
+    ;; Restore them by replacing the shell output prefix with the original path.
+    (when (eq system-type 'windows-nt)
+      (dolist (p expanded-paths)
+        (let ((unix-path (replace-regexp-in-string "^[a-zA-Z]:" "" p)))
+          (setq output (replace-regexp-in-string
+                        (regexp-quote unix-path) p output t t)))))
+    output))
 
 (defun todos--toggle-in-source ()
   "Toggle the checkbox in the source file for the current todo line."

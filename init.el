@@ -88,6 +88,9 @@
 ;;
 (load "~/.emacs.d/lib/ob-mongo.el")
 (load "~/.emacs.d/lib/helm-swoop.el")
+(let ((local-config (expand-file-name "local.el" user-emacs-directory)))
+  (when (file-exists-p local-config)
+    (load local-config)))
 (require 'helm-swoop)
 
 ;; theme config
