@@ -83,8 +83,8 @@
 
 ;; load other files
 (load "~/.emacs.d/config-functions.el")
-(load "~/.emacs.d/config-clojure.el")
-(load "~/.emacs.d/config-workshub.el")
+;;(load "~/.emacs.d/config-clojure.el")
+;;(load "~/.emacs.d/config-workshub.el")
 ;;
 (load "~/.emacs.d/lib/ob-mongo.el")
 (load "~/.emacs.d/lib/helm-swoop.el")

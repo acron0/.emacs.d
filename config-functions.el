@@ -1,3 +1,14 @@
+;; -*- lexical-binding: t; -*-
+
+;; Platform-aware shell configuration
+(when (eq system-type 'windows-nt)
+  (let ((git-bash "C:/Program Files/Git/bin/bash.exe"))
+    (when (file-executable-p git-bash)
+      (setq shell-file-name git-bash)
+      (setq shell-command-switch "-c")
+      (setq explicit-shell-file-name git-bash)
+      (setenv "SHELL" git-bash))))
+
 (defvar notes-directory "~/notes"
   "Root directory for notes. Used by `open-daily', `show-todos', `search-notes', etc.")
 
@@ -8,8 +19,8 @@ buffer in current window."
   (interactive)
   (message
    (if (let (window (get-buffer-window (current-buffer)))
-					; set-window-dedicated-p returns FLAG that was passed as
-					; second argument, thus can be used as COND for if:
+				; set-window-dedicated-p returns FLAG that was passed as
+				; second argument, thus can be used as COND for if:
          (set-window-dedicated-p window (not (window-dedicated-p window))))
        "%s: Can't touch this!"
      "%s is up for grabs.")
@@ -36,6 +47,16 @@ buffer in current window."
     (find-file filepath)
     (when (= (buffer-size) 0)
       (insert (format-time-string "* %Y-%m-%d - Daily Notes\n")))))
+
+(defun todos--shell-cmd (script paths &optional flags)
+  "Run SCRIPT with PATHS expanded and optional FLAGS passed as-is."
+  (shell-command-to-string
+   (concat
+    (shell-quote-argument (expand-file-name script))
+    " "
+    (mapconcat (lambda (p) (shell-quote-argument (expand-file-name p)))
+               paths " ")
+    (if flags (concat " " flags) ""))))
 
 (defun todos--toggle-in-source ()
   "Toggle the checkbox in the source file for the current todo line."
@@ -73,9 +94,9 @@ buffer in current window."
     (let ((inhibit-read-only t)
           (pos (point)))
       (erase-buffer)
-      (insert (shell-command-to-string (format "%s/Scripts/generate-todos.sh %s --org"
-                                          (expand-file-name notes-directory)
-                                          (shell-quote-argument (expand-file-name notes-directory)))))
+      (insert (todos--shell-cmd
+               (expand-file-name "Scripts/generate-todos.sh" notes-directory)
+               (list notes-directory) "--org"))
       (goto-char (min pos (point-max))))))
 
 (defun show-todos ()
@@ -85,9 +106,9 @@ buffer in current window."
     (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer)
-        (insert (shell-command-to-string (format "%s/Scripts/generate-todos.sh %s --org"
-                                          (expand-file-name notes-directory)
-                                          (shell-quote-argument (expand-file-name notes-directory))))))
+        (insert (todos--shell-cmd
+                 (expand-file-name "Scripts/generate-todos.sh" notes-directory)
+                 (list notes-directory) "--org")))
       (org-mode)
       (let ((map (make-sparse-keymap)))
         (set-keymap-parent map (current-local-map))
