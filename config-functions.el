@@ -66,6 +66,18 @@ buffer in current window."
                         (regexp-quote unix-path) p output t t)))))
     output))
 
+(defun todos--open-at-checkbox ()
+  "Open the linked file and move the cursor to the todo's checkbox."
+  (interactive)
+  (let ((line (thing-at-point 'line t)))
+    (when (string-match "\\[\\[file:\\([^]]+\\)\\]\\[\\([^]]+\\)\\]\\]" line)
+      (let ((file (match-string 1 line))
+            (todo-text (match-string 2 line)))
+        (find-file-other-window file)
+        (goto-char (point-min))
+        (when (search-forward todo-text nil t)
+          (beginning-of-line))))))
+
 (defun todos--toggle-in-source ()
   "Toggle the checkbox in the source file for the current todo line."
   (interactive)
@@ -98,6 +110,7 @@ buffer in current window."
 
 (defun todos--refresh ()
   "Regenerate the *Todos* buffer contents, preserving cursor position."
+  (interactive)
   (when (string= (buffer-name) "*Todos*")
     (let ((inhibit-read-only t)
           (pos (point)))
@@ -122,6 +135,7 @@ buffer in current window."
         (set-keymap-parent map (current-local-map))
         (define-key map (kbd "C-c C-c") 'todos--toggle-in-source)
         (define-key map (kbd "g") 'todos--refresh)
+        (define-key map (kbd "RET") 'todos--open-at-checkbox)
         (use-local-map map))
       (add-hook 'window-buffer-change-functions
                 (lambda (_) (todos--refresh)) nil t)
@@ -153,7 +167,7 @@ buffer in current window."
   "Search notes with rg, displaying results in a grep-mode buffer.
 Searches `notes-directory' by default."
   (interactive "sSearch notes: ")
-  (grep (format "rg --no-heading --line-number --color=auto %s %s"
+  (grep (format "rg --no-heading --line-number --color=auto --ignore-case %s %s"
                 (shell-quote-argument query)
                 (shell-quote-argument (expand-file-name notes-directory)))))
 

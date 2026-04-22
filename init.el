@@ -65,6 +65,7 @@
 (delete-selection-mode +1)
 (beacon-mode +1)
 (desktop-save-mode +1)
+(super-save-mode +1)
 
 ;; other config
 (menu-bar-mode -1)
