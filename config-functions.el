@@ -48,6 +48,94 @@ buffer in current window."
     (when (= (buffer-size) 0)
       (insert (format-time-string "* %Y-%m-%d - Daily Notes\n")))))
 
+(defvar-local dailies--saved-window-config nil
+  "Window configuration saved before entering the dailies view.")
+
+(defun dailies--current-date ()
+  "Return the date string on the current line, or nil."
+  (unless (eobp)
+    (string-trim (thing-at-point 'line t))))
+
+(defun dailies--update-preview ()
+  "Update *Dailies Preview* with the highlighted date's note."
+  (when (string= (buffer-name) "*Dailies*")
+    (let* ((date (dailies--current-date))
+           (filepath (when date
+                       (expand-file-name (concat date ".org")
+                                         (expand-file-name "Dailies" notes-directory))))
+           (preview-buf (get-buffer-create "*Dailies Preview*")))
+      (with-current-buffer preview-buf
+        (unless (eq major-mode 'org-mode)
+          (org-mode)
+          (read-only-mode 1))
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (if (and filepath (file-exists-p filepath))
+              (insert-file-contents filepath)
+            (insert (format "No note for %s\n" (or date "?")))))))))
+
+(defun dailies--quit ()
+  "Quit the dailies view, restoring the previous window configuration."
+  (interactive)
+  (let ((saved-config dailies--saved-window-config))
+    (kill-buffer "*Dailies*")
+    (when saved-config
+      (set-window-configuration saved-config))))
+
+(defun dailies--open-current ()
+  "Open the daily note for the current date, restoring windows first."
+  (interactive)
+  (when-let ((date (dailies--current-date)))
+    (let ((filepath (expand-file-name (concat date ".org")
+                                      (expand-file-name "Dailies" notes-directory)))
+          (saved-config dailies--saved-window-config))
+      (kill-buffer "*Dailies*")
+      (when saved-config
+        (set-window-configuration saved-config))
+      (find-file filepath))))
+
+(defun show-dailies ()
+  "Show a navigable list of daily notes with a live preview."
+  (interactive)
+  (let* ((dailies-dir (expand-file-name "Dailies" notes-directory))
+         (dates (when (file-directory-p dailies-dir)
+                  (sort (mapcar #'file-name-base
+                                (directory-files dailies-dir nil
+                                                 "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\.org$"))
+                        #'string>)))
+         (list-buf (get-buffer-create "*Dailies*")))
+    (with-current-buffer list-buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (if dates
+            (dolist (d dates) (insert d "\n"))
+          (insert "No daily notes found.\n")))
+      (goto-char (point-min))
+      (hl-line-mode 1)
+      (let ((map (make-sparse-keymap)))
+        (define-key map (kbd "n") #'next-line)
+        (define-key map (kbd "p") #'previous-line)
+        (define-key map (kbd "j") #'next-line)
+        (define-key map (kbd "k") #'previous-line)
+        (define-key map (kbd "RET") #'dailies--open-current)
+        (define-key map (kbd "q") #'dailies--quit)
+        (use-local-map map))
+      (add-hook 'post-command-hook #'dailies--update-preview nil t)
+      (add-hook 'kill-buffer-hook
+                (lambda ()
+                  (when-let ((w (get-buffer-window "*Dailies Preview*")))
+                    (delete-window w))
+                  (when (get-buffer "*Dailies Preview*")
+                    (kill-buffer "*Dailies Preview*")))
+                nil t)
+      (setq-local dailies--saved-window-config (current-window-configuration))
+      (read-only-mode 1))
+    (delete-other-windows)
+    (switch-to-buffer list-buf)
+    (split-window-right 22)
+    (set-window-buffer (next-window) (get-buffer-create "*Dailies Preview*"))
+    (dailies--update-preview)))
+
 (defun todos--shell-cmd (script paths &optional flags)
   "Run SCRIPT with PATHS expanded and optional FLAGS passed as-is."
   (let* ((expanded-paths (mapcar #'expand-file-name paths))
@@ -142,7 +230,7 @@ buffer in current window."
       (goto-char (point-min)))
     (switch-to-buffer buf)))
 
-(defun open-meeting ()
+(defun new-meeting ()
   "Create a new meeting note from the Meeting template."
   (interactive)
   (let* ((title (read-string "Meeting title: "))
